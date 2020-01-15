@@ -1,6 +1,6 @@
 class Balanse {
 
-    fun beregnBalanse(skattemeldingHM: HashMap<String, Long>): Long {
+    fun beregnBalanse(skattemelding: Skattemelding): Long {
 
         // mapping
 

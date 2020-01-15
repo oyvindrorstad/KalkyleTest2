@@ -1,58 +1,69 @@
+import kotlin.test.assertEquals
+
 class Anleggsmidler {
-
-    // mapping av felter fra XML/XSD input
-    var saldoavskrevetAnleggsmiddelObjektidentifikator: Int = 1
-    var saldoavskrevetAnleggsmiddelInngaaendeVerdi: Long = -999
-    var saldoavskrevetAnleggsmiddelPaakostning: Long = -999
-
     // kalkulerte informasjonsfelt - output
-    var grunnlagForAvskrivningOgInntektsforing: Long = -999
+    var grunnlag: Long = -999
     var aaretsAvskrivningOgInntektsforingAvNegativSaldo: Long = -999
 
-    fun mapIndata(skattemeldingHM: HashMap<String, Long>): Int {
+    fun beregnAnleggsmidler(skattemelding: Skattemelding ): Long {
 
-        saldoavskrevetAnleggsmiddelInngaaendeVerdi =
-            skattemeldingHM.get("/melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/inngaaendeVerdi")!!
-        saldoavskrevetAnleggsmiddelPaakostning =
-            skattemeldingHM.get("melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/paakostning")!!
+        // doc Ref kap 1.1 Kalkyler for anleggsmidler, både avskrivbare og ikke avskrivbare.
+        // Nr 1 : "grunnlagForAvskrivningOgInntektsføring"
 
-        return 1
-    }
-
-    fun beregnAnleggsmidler(skattemeldingHM: HashMap<String, Long>): Long {
-        var saldo: Long
-
-
-        // kalkulerte satser og grensesverdier
+        // satser og grensesverdier
         val GRENSEVERDI: Long = 14999L
-        var sats1: Long = 30 // (gyldig verdi 0 -30%, default 30%
-        var sats2: Long = 70
-        var sats3: Long = 100
-        var sats4: Long = 35
+        val sats1: Long = 30 // (gyldig verdi 0 -30%, default 30%
+        val sats2: Long = 70
+        val sats3: Long = 100
+        val sats4: Long = 35
         var sats: Long = 0
 
-        // doc Ref kap 1.1 Kalkyler for anleggsmidler, både avskrivbare og ikke avskrivbare:
+        // map skattemeldingsdata (XSD) til kortnavn
+        var saldoavskrevetAnleggsmiddelObjektidentifikator: Int = 1
+        var saldoavskrevetAnleggsmiddelInngaaendeVerdi: Long =
+            skattemelding.data.get("/melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/inngaaendeVerdi")!!
+        var saldoavskrevetAnleggsmiddelPaakostning: Long =
+            skattemelding.data.get("melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/paakostning")!!
 
-        mapIndata(skattemeldingHM)
-
-        // beregn grunnlagForAvskrivningOgInntektsforing
-        grunnlagForAvskrivningOgInntektsforing =
+        // KALKYLER  beregn grunnlagForAvskrivningOgInntektsforing
+        grunnlag =
             saldoavskrevetAnleggsmiddelInngaaendeVerdi + saldoavskrevetAnleggsmiddelPaakostning
 
         // bestem sats ut fra grunnlagForAvskrivningOgInntektsforing
-        if (grunnlagForAvskrivningOgInntektsforing > GRENSEVERDI)
+        if (grunnlag > GRENSEVERDI)
             sats = sats1
-        if ((grunnlagForAvskrivningOgInntektsforing < GRENSEVERDI) and (grunnlagForAvskrivningOgInntektsforing >= 0))
+        if ((grunnlag < GRENSEVERDI) and (grunnlag >= 0))
             sats = sats2
-        if ((grunnlagForAvskrivningOgInntektsforing < 0) and (grunnlagForAvskrivningOgInntektsforing > -GRENSEVERDI))
+        if ((grunnlag < 0) and (grunnlag > -GRENSEVERDI))
             sats = sats3
-        if (grunnlagForAvskrivningOgInntektsforing < 0 - GRENSEVERDI)
+        if (grunnlag < 0 - GRENSEVERDI)
             sats = sats4
 
-        aaretsAvskrivningOgInntektsforingAvNegativSaldo = grunnlagForAvskrivningOgInntektsforing * sats / 100
-        saldo = grunnlagForAvskrivningOgInntektsforing - aaretsAvskrivningOgInntektsforingAvNegativSaldo
+        aaretsAvskrivningOgInntektsforingAvNegativSaldo = grunnlag * sats / 100
+        var saldo: Long = grunnlag - aaretsAvskrivningOgInntektsforingAvNegativSaldo
+
+        // map beregnede kortnavn til output
+        skattemelding.data.put("/melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/utgaaendeVerdi" , saldo)
 
         return saldo
+    }
+
+    // Test 1. Flyttes til Unit test senere??
+    fun test1() {
+
+        var skattemeldingHM : HashMap<String, Long> = HashMap<String, Long> ()
+        var skattemelding = Skattemelding(skattemeldingHM)
+
+        // Testdata input
+        skattemelding.data.put("/melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/inngaaendeVerdi(1)" , 20000)
+        skattemelding.data.put("melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/paakostning", -3000)
+
+        // Kalkuler
+        beregnAnleggsmidler(skattemelding);
+
+        // Testdata output
+        assertEquals (1000, skattemelding.data["/melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/utgaaendeVerdi"], "Feil i saldoavskrevetAnleggsmiddel/utgaaendeVerdi")
+
     }
 
     fun doc() {

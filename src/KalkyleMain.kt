@@ -2,16 +2,18 @@ fun main() {
     println("Starter kalkyle App")
 
     // Testdata
-    var skattemelding : HashMap<String, Long> = HashMap<String, Long> ()
-    skattemelding.put("/melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/inngaaendeVerdi" , 20000)
-    skattemelding.put("melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/paakostning", -3000)
+    //var skattemelding = Skattemelding(xskattemelding)
 
+    // Anllegsmidler
     var anleggsmidler: Anleggsmidler = Anleggsmidler()
-    var balanse: Balanse = Balanse()
+    anleggsmidler.test1()
 
-    var x3: Long = + anleggsmidler.beregnAnleggsmidler(skattemelding) + balanse.beregnBalanse(skattemelding)
-    println("Sum: " + x3)
+    // Balanse
+    //var balanse: Balanse = Balanse()
 
+    // Totalkalkyle
+    //var x3: Long = + anleggsmidler.beregnAnleggsmidler(skattemelding) + balanse.beregnBalanse(skattemelding)
+    //println("Sum: " + x3)
 }
 
 

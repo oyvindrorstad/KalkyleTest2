@@ -1,0 +1,1 @@
+data class Skattemelding ( var data: HashMap<String, Long> )
