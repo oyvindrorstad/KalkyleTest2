@@ -1,16 +1,14 @@
 import kotlin.test.assertEquals
 
-class Anleggsmidler {
-    // kalkulerte informasjonsfelt - output
-    var grunnlag: Long = -999
-    var aaretsAvskrivningOgInntektsforingAvNegativSaldo: Long = -999
+data class InformasjonsElement(val key: String, val verdi: String, val forekomstIder: Map<String, String>)
 
+class Anleggsmidler {
+
+    // Ref kap 1.1 Kalkyler for anleggsmidler, både avskrivbare og ikke avskrivbare.
+    // Nr 1 : "grunnlagForAvskrivningOgInntektsføring"
     fun beregnAnleggsmidler(skattemelding: Skattemelding ): Long {
 
-        // doc Ref kap 1.1 Kalkyler for anleggsmidler, både avskrivbare og ikke avskrivbare.
-        // Nr 1 : "grunnlagForAvskrivningOgInntektsføring"
-
-        // satser og grensesverdier
+        // Satser og grensesverdier
         val GRENSEVERDI: Long = 14999L
         val sats1: Long = 30 // (gyldig verdi 0 -30%, default 30%
         val sats2: Long = 70
@@ -18,15 +16,12 @@ class Anleggsmidler {
         val sats4: Long = 35
         var sats: Long = 0
 
-        // map skattemeldingsdata (XSD) til kortnavn
-        var saldoavskrevetAnleggsmiddelObjektidentifikator: Int = 1
-        var saldoavskrevetAnleggsmiddelInngaaendeVerdi: Long =
-            skattemelding.data.get("/melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/inngaaendeVerdi")!!
-        var saldoavskrevetAnleggsmiddelPaakostning: Long =
-            skattemelding.data.get("melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/paakostning")!!
+        // MAPPING-INN. Fra skattemeldingsdata-XSD til kortnavn
+        var saldoavskrevetAnleggsmiddelInngaaendeVerdi: Long = skattemelding.data.get("/melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/inngaaendeVerdi")!!
+        var saldoavskrevetAnleggsmiddelPaakostning: Long = skattemelding.data.get("melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/paakostning")!!
 
         // KALKYLER  beregn grunnlagForAvskrivningOgInntektsforing
-        grunnlag =
+        var grunnlag: Long  =
             saldoavskrevetAnleggsmiddelInngaaendeVerdi + saldoavskrevetAnleggsmiddelPaakostning
 
         // bestem sats ut fra grunnlagForAvskrivningOgInntektsforing
@@ -39,30 +34,36 @@ class Anleggsmidler {
         if (grunnlag < 0 - GRENSEVERDI)
             sats = sats4
 
-        aaretsAvskrivningOgInntektsforingAvNegativSaldo = grunnlag * sats / 100
+        var aaretsAvskrivningOgInntektsforingAvNegativSaldo: Long = grunnlag * sats / 100
         var saldo: Long = grunnlag - aaretsAvskrivningOgInntektsforingAvNegativSaldo
 
-        // map beregnede kortnavn til output
+        //  MAPPING UT. Fra beregnede kortnavn til output-XSD
         skattemelding.data.put("/melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/utgaaendeVerdi" , saldo)
 
         return saldo
     }
 
-    // Test 1. Flyttes til Unit test senere??
-    fun test1() {
 
+    // Test 1. Sjekk typiske normalverdier
+    fun test1() {
+        // Testdata
+        val INNGÅENDEVERDI: Long = 20000
+        val PÅKOSTNING: Long  = -3000
+        val SALDO: Long  = 1000
+
+        // Testkode
         var skattemeldingHM : HashMap<String, Long> = HashMap<String, Long> ()
         var skattemelding = Skattemelding(skattemeldingHM)
 
         // Testdata input
-        skattemelding.data.put("/melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/inngaaendeVerdi(1)" , 20000)
-        skattemelding.data.put("melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/paakostning", -3000)
+        skattemelding.data.put("/melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/inngaaendeVerdi" , INNGÅENDEVERDI)
+        skattemelding.data.put("melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/paakostning", -PÅKOSTNING)
 
         // Kalkuler
         beregnAnleggsmidler(skattemelding);
 
         // Testdata output
-        assertEquals (1000, skattemelding.data["/melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/utgaaendeVerdi"], "Feil i saldoavskrevetAnleggsmiddel/utgaaendeVerdi")
+        assertEquals (SALDO, skattemelding.data["/melding/spesifikasjonAvBalanse/saldoavskrevetAnleggsmiddel/utgaaendeVerdi"], "Feil i saldoavskrevetAnleggsmiddel/utgaaendeVerdi")
 
     }
 
